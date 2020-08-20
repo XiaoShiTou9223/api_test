@@ -1,28 +1,19 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <!-- 单页面其实直接在这个里面开发就好啦 -->
+    <api-request></api-request>
   </div>
 </template>
-
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import ApiRequest from './views'
 
 export default {
-  name: 'App',
+  name: 'Api-Test',
   components: {
-    HelloWorld
+    ApiRequest
   }
 }
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
 </style>
