@@ -6,11 +6,36 @@
                 <el-form-item label="用户名">
                     <el-input v-model="paramLogin.username"></el-input>
                 </el-form-item>
+                <!--<el-form-item label="密码">-->
+                    <!--<el-input v-model="paramLogin.password"></el-input>-->
+                <!--</el-form-item>-->
                 <el-form-item label="密码">
-                    <el-input v-model="paramLogin.password" show-password></el-input>
+                    <el-select
+                            v-model="paramLogin.password"
+                            allow-create
+                            filterable
+                            default-first-option
+                            placeholder="请选择或输入">
+                        <el-option
+                                v-for="item in passwords"
+                                :key="item"
+                                :label="item"
+                                :value="item">
+                        </el-option>
+                    </el-select>
                 </el-form-item>
-                <el-form-item label="使用MD5加密">
-                    <el-switch size="mini" v-model="server.isMd5"></el-switch>
+                <el-form-item label="登录MD5加密">
+                    <el-switch size="mini" v-model="server.isMd5" @change="changeLoginMd5"></el-switch>
+                </el-form-item>
+                <el-form-item label="请求加密">
+                    <el-select disabled v-model="server.isEncryptRequest" @change="changeReqEncrypt" placeholder="请选择">
+                        <el-option
+                                v-for="item in encryptType"
+                                :key="item"
+                                :label="item"
+                                :value="item">
+                        </el-option>
+                    </el-select>
                 </el-form-item>
                 <el-form-item label="用户类型">
                     <el-radio v-model="radio" label="o">其他</el-radio>
@@ -18,13 +43,30 @@
                     <el-radio v-model="radio" label="t">测试用户</el-radio>
                 </el-form-item>
                 <el-form-item label="请求协议头">
-                    <el-input v-model="server.base"></el-input>
+                    <el-select
+                            v-model="server.base"
+                            allow-create
+                            filterable
+                            default-first-option
+                            placeholder="请选择">
+                        <el-option
+                                v-for="item in bases"
+                                :key="item"
+                                :label="item"
+                                :value="item">
+                        </el-option>
+                    </el-select>
                 </el-form-item>
                 <el-form-item label="请求端口">
                     <el-input v-model="server.port"></el-input>
                 </el-form-item>
                 <el-form-item label="登录API">
-                    <el-select v-model="server.logApi" placeholder="请选择">
+                    <el-select
+                            allow-create
+                            filterable
+                            default-first-option
+                            v-model="server.logApi"
+                            placeholder="请选择或输入">
                         <el-option
                                 v-for="item in logApis"
                                 :key="item"
@@ -165,6 +207,8 @@
     // 定义了两个key
     const LS_URLS = "_urls_";
     const LS_PARAMS = "_params_";
+    const SYS_LOGIN_MD5 = "_sys_md5_login_";
+    const SYS_REQ_ENCRYPT = "_sys_encrypt_req_";
 
     export default {
         name: "page-of-ajax-client",
@@ -185,16 +229,20 @@
                 server: {
                     port: 10201,// process.env.VUE_APP_SPORT,
                     isMd5: false,
+                    isEncryptRequest: 'none',
                     base: "http://localhost:",
                     logApi: "/system/authentication/login/unpw.do"
                 },
+                bases: ["http://localhost:", "https://localhost:"],
                 logApis: [
                     '/system/authentication/login/unpw.do', '/system/authentication/login.do'
                 ],
+                passwords: ['1111', '11111111', 'pw123456', '12345678', '1'],
                 paramLogin: {
                     username: "administrator",
                     password: "1111"
                 },
+                encryptType: ['none', 'md5', 'base64', 'encode'],
                 ctl: {
                     drawer: true
                 },
@@ -456,6 +504,12 @@
                         this.username = data.data.username || "";
                     }
                 );
+            },
+            changeLoginMd5(v) {
+                lsput(SYS_LOGIN_MD5, v ? 'yes': 'no')
+            },
+            changeReqEncrypt(v) {
+                lsput(SYS_REQ_ENCRYPT, v)
             }
         },
         created() {
@@ -475,6 +529,12 @@
             this.showUrlArray(this.dataUrls);
             this.dataParams = [...this.paramSet.values()];
             this.showParamArray(this.dataParams);
+
+            // 设置登录MD5加密
+            this.server.isMd5 = lsget(SYS_LOGIN_MD5) ? lsget(SYS_LOGIN_MD5) === 'yes' : false;
+
+            // 设置请求加密方式
+            this.server.isEncryptRequest = lsget(SYS_REQ_ENCRYPT) || 'none';
         }
     };
 </script>
