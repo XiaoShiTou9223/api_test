@@ -7,7 +7,7 @@
                     <el-input v-model="paramLogin.username"></el-input>
                 </el-form-item>
                 <!--<el-form-item label="密码">-->
-                    <!--<el-input v-model="paramLogin.password"></el-input>-->
+                <!--<el-input v-model="paramLogin.password"></el-input>-->
                 <!--</el-form-item>-->
                 <el-form-item label="密码">
                     <el-select
@@ -82,50 +82,17 @@
             </el-form>
         </el-drawer>
 
-        <!-- 头部部分 -->
-        <el-header>
-            <el-form>
-                <el-row>
-                    <el-col :span="3">
-                        <el-form-item label="登录">
-                            <el-button @click="ctl.drawer = true" size="mini">Login</el-button>
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="4">
-                        <el-form-item label="登录用户"><strong>{{username}}</strong></el-form-item>
-                    </el-col>
-                    <el-col :span="7">
-                        <el-form-item label="请求分页">
-                            <el-switch size="mini" v-model="formData.isPaged"></el-switch>
-                            第
-                            <el-input
-                                    style="width: 80px"
-                                    size="mini"
-                                    type="number"
-                                    min="1"
-                                    max="30"
-                                    v-model="formData.page"
-                            ></el-input>
-                            页，数量
-                            <el-input
-                                    style="width: 80px"
-                                    size="mini"
-                                    type="number"
-                                    min="1"
-                                    max="30"
-                                    v-model="formData.pageSize"
-                            ></el-input>
-                            。
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-            </el-form>
-        </el-header>
-
         <!-- 主要的部分 -->
         <el-main>
             <el-form class="post-form" label-width="85px" :model="formData">
                 <el-row>
+
+                    <el-col :span="20">
+                        <el-form-item label="登录用户">
+                            <strong>{{username}}</strong>
+                            <el-button @click="ctl.drawer = true" size="mini">Login</el-button>
+                        </el-form-item>
+                    </el-col>
                     <el-col :span="24">
                         <el-form-item label="请求地址">
                             <el-input size="mini" v-model="formData.url" placeholder="input you path"></el-input>
@@ -143,6 +110,26 @@
                             ></el-input>
                             <el-button class="color-blue" @click="doGet" size="mini">Get</el-button>
                             <el-button class="color-blue" @click="doPost" size="mini">Post</el-button>
+                            <span> 请求分页: </span><el-switch size="mini" v-model="formData.isPaged"></el-switch>
+                                第
+                                <el-input
+                                        style="width: 80px"
+                                        size="mini"
+                                        type="number"
+                                        min="1"
+                                        max="30"
+                                        v-model="formData.page"
+                                ></el-input>
+                                页，数量
+                                <el-input
+                                        style="width: 80px"
+                                        size="mini"
+                                        type="number"
+                                        min="1"
+                                        max="30"
+                                        v-model="formData.pageSize"
+                                ></el-input>
+                                。
                         </el-form-item>
                     </el-col>
                     <el-col :span="24">
@@ -150,10 +137,9 @@
                             <el-badge :value="this.resultSize" class="item">
                                 <div v-highlight>
                   <pre
-                          class="hljs json"
+                          class="hljs json re-size"
                           id="resultrender"
                           v-html="vhtml"
-                          style="line-height:initial;font-size: 0.6rem;"
                   >{{vhtml}}</pre>
                                 </div>
                             </el-badge>
@@ -162,7 +148,7 @@
                     <el-col :span="8">
                         <el-form-item label="URL列表">
                             <el-badge :value="this.urlSet.size" class="item">
-                                <ul style="line-height:initial;">
+                                <ul class="re-size">
                                     <li v-for="(item,i) in dataUrls" :key="i" :data-url="item">
                                         <div class="disableinp">
                                             <span class="txtovf" :title="item">{{item}}</span>
@@ -179,7 +165,7 @@
                     <el-col :span="16">
                         <el-form-item label="参数列表">
                             <el-badge :value="this.paramSet.size" class="item">
-                                <ul style="line-height:initial;overflow:auto">
+                                <ul class="re-size">
                                     <li v-for="(item,i) in dataParams" :key="i" :data-url="item">
                                         <div class="disableinp">
                                             <span class="txtovf" :title="item">{{item}}</span>
@@ -286,6 +272,10 @@
             }
         },
         methods: {
+            reUrl(url) {
+                const regexp = /(http:\/\/)?(localhost|127\.0\.0\.1)(:\d+)?/g;
+                return url.replace(regexp, '')
+            },
             renderCode() {
                 setTimeout(() => {
                     var pres = document.querySelectorAll("pre");
@@ -299,13 +289,16 @@
             },
             formatUrl(api) {
                 if (typeof api === "string") {
+                    // 处理一下url
+                    api = this.reUrl(api);
+                    // 处理不以 / 打头的情况
+                    api = api.charAt(0) === "/" ? api : "/" + api;
+
                     this.urlSet.add(api.trim());
                     this.dataUrls = [...this.urlSet.values()];
                     lsput(LS_URLS, this.dataUrls);
                     this.showUrlArray(this.dataUrls);
-                    return api.charAt(0) === "/"
-                        ? this.server.base + this.server.port + api
-                        : this.server.base + this.server.port + "/" + api;
+                    return this.server.base + this.server.port + api;
                 }
                 return "#";
             },
@@ -506,7 +499,7 @@
                 );
             },
             changeLoginMd5(v) {
-                lsput(SYS_LOGIN_MD5, v ? 'yes': 'no')
+                lsput(SYS_LOGIN_MD5, v ? 'yes' : 'no')
             },
             changeReqEncrypt(v) {
                 lsput(SYS_REQ_ENCRYPT, v)
@@ -587,5 +580,10 @@
 
     .pal {
         margin: 10px;
+    }
+
+    .re-size {
+        line-height: initial;
+        font-size: 0.6rem;
     }
 </style>
