@@ -4,7 +4,7 @@
         <el-drawer title :visible.sync="ctl.drawer" direction="rtl" :with-header="false" :show-close="false">
             <el-form :model="paramLogin" class="pal">
                 <el-form-item label="用户名">
-                    <el-input v-model="paramLogin.username"></el-input>
+                    <el-input v-model="paramLogin.username" @change="changeLoginUser"></el-input>
                 </el-form-item>
                 <!--<el-form-item label="密码">-->
                 <!--<el-input v-model="paramLogin.password"></el-input>-->
@@ -101,6 +101,7 @@
                     <el-col :span="24">
                         <el-form-item label="请求参数">
                             <el-input
+                                    v-if="!server.preview"
                                     size="mini"
                                     type="textarea"
                                     :autosize="{ minRows: 2, maxRows: 5}"
@@ -108,28 +109,38 @@
                                     placeholder="Json Params"
                                     title="需要标准的Json"
                             ></el-input>
+                            <div v-highlight v-else>
+                              <pre
+                                      class="hljs json re-size"
+                                      id="psrender"
+                                      v-html="vpshtml"
+                              >{{vpshtml}}</pre>
+                            </div>
+                            <span> 预览: </span>
+                            <el-switch size="mini" v-model="server.preview" @change="handlePreview"></el-switch>
                             <el-button class="color-blue" @click="doGet" size="mini">Get</el-button>
                             <el-button class="color-blue" @click="doPost" size="mini">Post</el-button>
-                            <span> 请求分页: </span><el-switch size="mini" v-model="formData.isPaged"></el-switch>
-                                第
-                                <el-input
-                                        style="width: 80px"
-                                        size="mini"
-                                        type="number"
-                                        min="1"
-                                        max="30"
-                                        v-model="formData.page"
-                                ></el-input>
-                                页，数量
-                                <el-input
-                                        style="width: 80px"
-                                        size="mini"
-                                        type="number"
-                                        min="1"
-                                        max="30"
-                                        v-model="formData.pageSize"
-                                ></el-input>
-                                。
+                            <span> 请求分页: </span>
+                            <el-switch size="mini" v-model="formData.isPaged"></el-switch>
+                            第
+                            <el-input
+                                    style="width: 80px"
+                                    size="mini"
+                                    type="number"
+                                    min="1"
+                                    max="30"
+                                    v-model="formData.page"
+                            ></el-input>
+                            页，数量
+                            <el-input
+                                    style="width: 80px"
+                                    size="mini"
+                                    type="number"
+                                    min="1"
+                                    max="30"
+                                    v-model="formData.pageSize"
+                            ></el-input>
+                            。
                         </el-form-item>
                     </el-col>
                     <el-col :span="24">
@@ -195,6 +206,7 @@
     const LS_PARAMS = "_params_";
     const SYS_LOGIN_MD5 = "_sys_md5_login_";
     const SYS_REQ_ENCRYPT = "_sys_encrypt_req_";
+    const SYS_LOGIN_LAST = "_sys_login_last_";
 
     export default {
         name: "page-of-ajax-client",
@@ -217,7 +229,8 @@
                     isMd5: false,
                     isEncryptRequest: 'none',
                     base: "http://localhost:",
-                    logApi: "/system/authentication/login/unpw.do"
+                    logApi: "/system/authentication/login/unpw.do",
+                    preview: false
                 },
                 bases: ["http://localhost:", "https://localhost:"],
                 logApis: [
@@ -248,6 +261,7 @@
                 },
                 // 返回的代码结果
                 vhtml: "",
+                vpshtml: "",
                 dataUrls: [],
                 dataParams: [],
                 resultSize: undefined,
@@ -353,6 +367,7 @@
                 this.formData.url = v;
             },
             applyparam(v) {
+                this.server.preview = false;
                 this.formData.json = v;
             },
             checkAuthorizingMissing(data) {
@@ -390,6 +405,8 @@
                 this.showParamArray(this.dataParams);
 
                 method = method.toUpperCase();
+
+                // 格式化请求参数
                 params = params === "" ? "{}" : params;
                 params = params.replace(/'/g, '"');
 
@@ -503,6 +520,14 @@
             },
             changeReqEncrypt(v) {
                 lsput(SYS_REQ_ENCRYPT, v)
+            },
+            changeLoginUser(u) {
+                lsput(SYS_LOGIN_LAST, u)
+            },
+            handlePreview() {
+                const mvpshtml = this.formData.json || '';
+                this.vpshtml = mvpshtml.replace(/'/g, '"');
+                this.renderCode()
             }
         },
         created() {
@@ -528,6 +553,9 @@
 
             // 设置请求加密方式
             this.server.isEncryptRequest = lsget(SYS_REQ_ENCRYPT) || 'none';
+
+            // 回显上次登录的用户名
+            this.paramLogin.username = lsget(SYS_LOGIN_LAST) || this.paramLogin.username;
         }
     };
 </script>
