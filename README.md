@@ -33,3 +33,5 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 - 至于组件的问题，我们可以自行的慢慢编辑使用即可。
 
 - 虽然是一个简单的vue-cli的实例，通过查资料和配置并跑起来也算是小总结了一番。
+
+
