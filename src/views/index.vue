@@ -2,16 +2,23 @@
     <el-container>
         <!-- 放置一个抽屉用于配置信息 -->
         <el-drawer title :visible.sync="ctl.drawer" direction="rtl" :with-header="false" :show-close="false">
-            <el-form :model="paramLogin" class="pal">
-                <el-form-item label="用户名">
-                    <el-input v-model="paramLogin.username" @change="changeLoginUser"></el-input>
+            <el-form :rules="rules" :model="paramLogin" class="pal" label-width="120px" label-position="left">
+                <el-divider><i style="font-size: 1.1rem; color: #409EFF; " class="el-icon-user-solid">Account</i></el-divider>
+                <el-form-item label="用户类型">
+                    <el-radio v-model="radio" label="o">其他</el-radio>
+                    <el-radio v-model="radio" label="a">管理员</el-radio>
+                    <!--<el-radio v-model="radio" label="t">测试用户</el-radio>-->
+                </el-form-item>
+                <el-form-item label="用户名" prop="username">
+                    <el-input v-model="paramLogin.username" class="stdinput" @input="changeLoginUser"></el-input>
                 </el-form-item>
                 <!--<el-form-item label="密码">-->
                 <!--<el-input v-model="paramLogin.password"></el-input>-->
                 <!--</el-form-item>-->
-                <el-form-item label="密码">
+                <el-form-item label="密码" prop="password">
                     <el-select
                             v-model="paramLogin.password"
+                            @input="changeLoginPassword"
                             allow-create
                             filterable
                             default-first-option
@@ -24,8 +31,13 @@
                         </el-option>
                     </el-select>
                 </el-form-item>
+                <el-row gutter="20px" style="width: 100%;margin-left: 30%;">
+                    <el-col :span="5"><el-button @click="ctl.drawer = false">取 消</el-button></el-col>
+                    <el-col :span="5"><el-button type="primary" @click="handleLogin">确 定</el-button></el-col>
+                </el-row>
+                <el-divider><i style="font-size: 1.1rem;color: #409EFF; " class="el-icon-s-tools">Setting</i></el-divider>
                 <el-form-item label="登录MD5加密">
-                    <el-switch size="mini" v-model="server.isMd5" @change="changeLoginMd5"></el-switch>
+                    <el-checkbox label="加密" name="type" v-model="server.isMd5" @change="changeLoginMd5"></el-checkbox>
                 </el-form-item>
                 <el-form-item label="请求加密">
                     <el-select disabled v-model="server.isEncryptRequest" @change="changeReqEncrypt" placeholder="请选择">
@@ -36,11 +48,6 @@
                                 :value="item">
                         </el-option>
                     </el-select>
-                </el-form-item>
-                <el-form-item label="用户类型">
-                    <el-radio v-model="radio" label="o">其他</el-radio>
-                    <el-radio v-model="radio" label="a">管理员</el-radio>
-                    <el-radio v-model="radio" label="t">测试用户</el-radio>
                 </el-form-item>
                 <el-form-item label="请求协议头">
                     <el-select
@@ -57,14 +64,19 @@
                         </el-option>
                     </el-select>
                 </el-form-item>
+                <el-divider><i style="font-size: 1.1rem;color: #409EFF; " class="el-icon-refrigerator">Server</i></el-divider>
                 <el-form-item label="请求端口">
-                    <el-input v-model="server.port"></el-input>
+                    <el-input v-model="server.port" class="stdinput" @input="handlePortChange"></el-input>
+                </el-form-item>
+                <el-form-item label="Context Root">
+                    <el-input v-model="server.context" class="stdinput" @input="handleContextChange"></el-input>
                 </el-form-item>
                 <el-form-item label="登录API">
                     <el-select
                             allow-create
                             filterable
                             default-first-option
+                            @change="handleLogApiChange"
                             v-model="server.logApi"
                             placeholder="请选择或输入">
                         <el-option
@@ -75,10 +87,8 @@
                         </el-option>
                     </el-select>
                 </el-form-item>
-                <el-form-item>
-                    <el-button @click="ctl.drawer = false">取 消</el-button>
-                    <el-button type="primary" @click="handleLogin">确 定</el-button>
-                </el-form-item>
+                <el-divider></el-divider>
+
             </el-form>
         </el-drawer>
 
@@ -207,18 +217,33 @@
     const SYS_LOGIN_MD5 = "_sys_md5_login_";
     const SYS_REQ_ENCRYPT = "_sys_encrypt_req_";
     const SYS_LOGIN_LAST = "_sys_login_last_";
+    const SYS_LOGIN_API_LAST = "_sys_login_api_last_";
+    const SYS_LOGIN_PWD_LAST = "_sys_login_pwd_last_";
+    const SYS_PORT_LAST = "_sys_port_last_";
+    const SYS_CONTEXT_ROOT_LAST = "_sys_app_path_last_";
 
     export default {
         name: "page-of-ajax-client",
         computed: {
             deflogin() {
+                const ctx = (this.server.context === "/" ?  "" : this.server.context);
                 return (
                     this.server.base +
                     this.server.port +
                     (this.server.logApi.charAt(0) === '/'
-                        ? this.server.logApi
-                        : '/' + this.server.logApi)
+                        ? ctx + this.server.logApi
+                        : ctx + '/' + this.server.logApi)
                 );
+            },
+            rules () {
+                return {
+                    username: [
+                        {required: true, message: '必填项', trigger: 'blur'}
+                    ],
+                    password: [
+                        {required: true, message: '必填项', trigger: 'blur'}
+                    ]
+                }
             }
         },
         data() {
@@ -230,11 +255,15 @@
                     isEncryptRequest: 'none',
                     base: "http://localhost:",
                     logApi: "/system/authentication/login/unpw.do",
-                    preview: false
+                    preview: false,
+                    context: '/'
                 },
                 bases: ["http://localhost:", "https://localhost:"],
                 logApis: [
-                    '/system/authentication/login/unpw.do', '/system/authentication/login.do'
+                    '/system/authentication/login/unpw.do',
+                    '/system/authentication/login.do',
+                    '/user/login.do',
+                    '/login.do'
                 ],
                 passwords: ['1111', '11111111', 'pw123456', '12345678', '1'],
                 paramLogin: {
@@ -307,12 +336,15 @@
                     api = this.reUrl(api);
                     // 处理不以 / 打头的情况
                     api = api.charAt(0) === "/" ? api : "/" + api;
+                    // 添加项目的context
+
 
                     this.urlSet.add(api.trim());
                     this.dataUrls = [...this.urlSet.values()];
                     lsput(LS_URLS, this.dataUrls);
                     this.showUrlArray(this.dataUrls);
-                    return this.server.base + this.server.port + api;
+                    return this.server.base + this.server.port +
+                        (this.server.context === "/" ?  "" : this.server.context) + api;
                 }
                 return "#";
             },
@@ -524,6 +556,18 @@
             changeLoginUser(u) {
                 lsput(SYS_LOGIN_LAST, u)
             },
+            changeLoginPassword(pwd) {
+                lsput(SYS_LOGIN_PWD_LAST, pwd)
+            },
+            handlePortChange(p) {
+                lsput(SYS_PORT_LAST, p)
+            },
+            handleContextChange(p) {
+                lsput(SYS_CONTEXT_ROOT_LAST, p)
+            },
+            handleLogApiChange(p) {
+                lsput(SYS_LOGIN_API_LAST, p)
+            },
             handlePreview() {
                 const mvpshtml = this.formData.json || '';
                 this.vpshtml = mvpshtml.replace(/'/g, '"');
@@ -556,6 +600,18 @@
 
             // 回显上次登录的用户名
             this.paramLogin.username = lsget(SYS_LOGIN_LAST) || this.paramLogin.username;
+
+            // 选择的登录的api
+            this.server.logApi = lsget(SYS_LOGIN_API_LAST) || this.server.logApi;
+
+            // 回显上次使用的密码
+            this.paramLogin.password = lsget(SYS_LOGIN_PWD_LAST) || this.paramLogin.password;
+
+            // 回显上次使用的端口
+            this.server.port = lsget(SYS_PORT_LAST) || this.server.port;
+
+            // 回显上次使用的项目的根
+            this.server.context = lsget(SYS_CONTEXT_ROOT_LAST) || this.server.context;
         }
     };
 </script>
@@ -613,5 +669,9 @@
     .re-size {
         line-height: initial;
         font-size: 0.6rem;
+    }
+
+    .stdinput {
+        width: 210px
     }
 </style>
